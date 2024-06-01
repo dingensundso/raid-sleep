@@ -74,7 +74,7 @@ def wake_up():
         p.wait()
 
 
-def diskstats():
+def diskstats(disks=None):
     # see https://www.kernel.org/doc/Documentation/iostats.txt
     #
     columns = [
@@ -92,9 +92,10 @@ def diskstats():
 
         data = dict(list(zip(columns, parts)))
 
-        result["/dev/" + data["device"]] = {
-            k: int(v) for k, v in list(data.items()) if k != "device"
-        }
+        if "/dev/" + data["device"] in disks or disks is None:
+            result["/dev/" + data["device"]] = {
+                k: int(v) for k, v in list(data.items()) if k != "device"
+            }
 
     return result
 
@@ -119,8 +120,7 @@ dprint(
 )
 
 while True:
-    stats = diskstats()
-    stats = {k: v for k, v in list(stats.items()) if k in args.disk_devs}
+    stats = diskstats(args.disk_devs)
 
     now = time.time()
 
