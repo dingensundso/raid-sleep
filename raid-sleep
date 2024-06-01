@@ -140,6 +140,7 @@ while True:
 
             dprint("Powering down after %s" % hms(now - last_standby))
             power_down()
+            stats = diskstats(args.disk_devs)
 
     old_stats = stats
     time.sleep(1)
