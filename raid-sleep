@@ -2,6 +2,7 @@
 #
 import argparse
 import time
+import logging
 import textwrap
 from subprocess import Popen, PIPE
 from pathlib import Path
@@ -57,13 +58,6 @@ def get_raid_members(raid):
     ]
 
 
-def dprint(*message):
-    if args.verbose:
-        for s in message:
-            print(s, end=" ")
-        print()
-
-
 def power_down():
     # hdparm may take a long time, so execute in parallel
     #
@@ -92,7 +86,10 @@ if __name__ == "__main__":
     parse_args()
     args.disk_devs = get_raid_members(args.raid)
 
-    dprint(
+    if args.verbose:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    logging.info(
         "Monitoring %s. Timeout = %s" % (", ".join(args.disk_devs), hms(args.timeout))
     )
 
@@ -106,7 +103,9 @@ if __name__ == "__main__":
                 disk_state = 1
                 last_standby = now
 
-                dprint("Waking up after %s of inactivity" % hms(now - last_access))
+                logging.info(
+                    "Waking up after %s of inactivity" % hms(now - last_access)
+                )
                 wake_up()
 
             last_access = now
@@ -115,7 +114,7 @@ if __name__ == "__main__":
             if disk_state == 1:
                 disk_state = 0
 
-                dprint("Powering down after %s" % hms(now - last_standby))
+                logging.info("Powering down after %s" % hms(now - last_standby))
                 power_down()
                 stats = Path(f"/sys/block/{args.raid}/stat").read_text()
 
