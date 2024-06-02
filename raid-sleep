@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 #
-import os
 import argparse
 import time
 import textwrap
@@ -19,7 +18,7 @@ def parse_args():
 
             %(prog)s comes with ABSOLUTELY NO WARRANTY. This is free software,
             and you are welcome to redistribute it under certain conditions.
-            See the GNU General Public Licence version 3 (or later) for details.       
+            See the GNU General Public Licence version 3 (or later) for details.
         ''')
     )
 
@@ -81,32 +80,6 @@ def wake_up():
         p.wait()
 
 
-def diskstats(disks=None):
-    # see https://www.kernel.org/doc/Documentation/iostats.txt
-    #
-    columns = [
-        "major_dev_num", "minor_dev_num", "device",
-        "reads", "reads_merged", "sectors_read", "ms_reading",
-        "writes", "writes_merged", "sectors_written", "ms_writing",
-        "current_ios", "ms_doing_io", "weighted_ms_doing_io"
-    ]
-
-    result = {}
-    for line in open("/proc/diskstats"):
-        parts = line.split()
-        if len(parts) < len(columns):
-            continue
-
-        data = dict(list(zip(columns, parts)))
-
-        if "/dev/" + data["device"] in disks or disks is None:
-            result["/dev/" + data["device"]] = {
-                k: int(v) for k, v in list(data.items()) if k != "device"
-            }
-
-    return result
-
-
 def hms(s):
     return "%d:%02d:%02d" % (s / 3600, s / 60 % 60, s % 60)
 
@@ -128,7 +101,7 @@ if __name__ == "__main__":
     )
 
     while True:
-        stats = diskstats(args.disk_devs)
+        stats = Path(f'/sys/block/{args.raid}/stat').read_text()
 
         now = time.time()
 
@@ -148,7 +121,7 @@ if __name__ == "__main__":
 
                 dprint("Powering down after %s" % hms(now - last_standby))
                 power_down()
-                stats = diskstats(args.disk_devs)
+                stats = Path(f'/sys/block/{args.raid}/stat').read_text()
 
         old_stats = stats
         time.sleep(1)
