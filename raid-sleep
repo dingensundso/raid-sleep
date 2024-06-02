@@ -105,42 +105,42 @@ def hms(s):
 
 
 # ----- ----- ----- ----- -----
+if __name__ == "__main__":
+    old_stats = None
+    last_access = time.time()
+    last_standby = last_access
+    disk_state = 1
 
-old_stats = None
-last_access = time.time()
-last_standby = last_access
-disk_state = 1
+    parse_args()
 
-parse_args()
-
-dprint(
-    "Monitoring %s. Timeout = %s" % (
-        ", ".join(args.disk_devs), hms(args.timeout)
+    dprint(
+        "Monitoring %s. Timeout = %s" % (
+            ", ".join(args.disk_devs), hms(args.timeout)
+        )
     )
-)
 
-while True:
-    stats = diskstats(args.disk_devs)
+    while True:
+        stats = diskstats(args.disk_devs)
 
-    now = time.time()
+        now = time.time()
 
-    if old_stats and old_stats != stats:
-        if disk_state == 0:
-            disk_state = 1
-            last_standby = now
+        if old_stats and old_stats != stats:
+            if disk_state == 0:
+                disk_state = 1
+                last_standby = now
 
-            dprint("Waking up after %s of inactivity" % hms(now - last_access))
-            wake_up()
+                dprint("Waking up after %s of inactivity" % hms(now - last_access))
+                wake_up()
 
-        last_access = now
+            last_access = now
 
-    if now - last_access > args.timeout:
-        if disk_state == 1:
-            disk_state = 0
+        if now - last_access > args.timeout:
+            if disk_state == 1:
+                disk_state = 0
 
-            dprint("Powering down after %s" % hms(now - last_standby))
-            power_down()
-            stats = diskstats(args.disk_devs)
+                dprint("Powering down after %s" % hms(now - last_standby))
+                power_down()
+                stats = diskstats(args.disk_devs)
 
-    old_stats = stats
-    time.sleep(1)
+        old_stats = stats
+        time.sleep(1)
