@@ -9,8 +9,6 @@ from pathlib import Path
 
 
 def parse_args():
-    global args
-
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent("""\
@@ -50,6 +48,8 @@ def parse_args():
     if args.raid.startswith("/dev/"):
         args.raid = args.raid[5:]
 
+    return args
+
 
 def get_raid_members(raid):
     return [
@@ -58,16 +58,16 @@ def get_raid_members(raid):
     ]
 
 
-def power_down():
+def power_down(disk_devs):
     # hdparm may take a long time, so execute in parallel
     #
-    for p in [Popen(["hdparm", "-y", d], stdout=PIPE) for d in args.disk_devs]:
+    for p in [Popen(["hdparm", "-y", d], stdout=PIPE) for d in disk_devs]:
         p.wait()
 
 
-def wake_up():
+def wake_up(disk_devs):
     for p in [
-        Popen(["hdparm", "--read-sector", "0", d], stdout=PIPE) for d in args.disk_devs
+        Popen(["hdparm", "--read-sector", "0", d], stdout=PIPE) for d in disk_devs
     ]:
         p.wait()
 
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     last_standby = last_access
     disk_state = 1
 
-    parse_args()
+    args = parse_args()
     args.disk_devs = get_raid_members(args.raid)
 
     if args.verbose:
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                 logging.info(
                     "Waking up after %s of inactivity" % hms(now - last_access)
                 )
-                wake_up()
+                wake_up(args.disk_devs)
 
             last_access = now
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
                 disk_state = 0
 
                 logging.info("Powering down after %s" % hms(now - last_standby))
-                power_down()
+                power_down(args.disk_devs)
                 stats = Path(f"/sys/block/{args.raid}/stat").read_text()
 
         old_stats = stats
