@@ -12,48 +12,50 @@ def parse_args():
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent('''\
+        description=textwrap.dedent("""\
             Power down RAID disks after a specified timeout
             Copyright (c)2015-2018 Thomas Kindler <mail+git@t-kindler.de>
 
             %(prog)s comes with ABSOLUTELY NO WARRANTY. This is free software,
             and you are welcome to redistribute it under certain conditions.
             See the GNU General Public Licence version 3 (or later) for details.
-        ''')
+        """),
     )
 
-    parser.add_argument(
-        "--version", action="version",
-        version="%(prog)s 1.1.0"
-    )
+    parser.add_argument("--version", action="version", version="%(prog)s 1.1.0")
 
     parser.add_argument(
-        "-q", "--quiet", dest="verbose",
-        default=True, action="store_false",
+        "-q",
+        "--quiet",
+        dest="verbose",
+        default=True,
+        action="store_false",
         help="do not print status messages",
     )
 
     parser.add_argument(
-        "-t", "--timeout", dest="timeout",
-        default=1800, type=int,
-        help="standby timeout in seconds (default: %(default)s)"
+        "-t",
+        "--timeout",
+        dest="timeout",
+        default=1800,
+        type=int,
+        help="standby timeout in seconds (default: %(default)s)",
     )
 
-    parser.add_argument(
-        "raid",
-        help="Raid device to monitor"
-    )
+    parser.add_argument("raid", help="Raid device to monitor")
 
     args = parser.parse_args()
 
     if args.raid.startswith("/dev/"):
         args.raid = args.raid[5:]
 
+
 def get_raid_members(raid):
     return [
-        "/dev/" + (d.resolve()/"..").resolve().stem
+        "/dev/" + (d.resolve() / "..").resolve().stem
         for d in Path(f"/sys/block/{raid}/slaves").iterdir()
     ]
+
 
 def dprint(*message):
     if args.verbose:
@@ -65,17 +67,13 @@ def dprint(*message):
 def power_down():
     # hdparm may take a long time, so execute in parallel
     #
-    for p in [
-        Popen(["hdparm", "-y", d], stdout=PIPE)
-        for d in args.disk_devs
-    ]:
+    for p in [Popen(["hdparm", "-y", d], stdout=PIPE) for d in args.disk_devs]:
         p.wait()
 
 
 def wake_up():
     for p in [
-        Popen(["hdparm", "--read-sector", "0", d], stdout=PIPE)
-        for d in args.disk_devs
+        Popen(["hdparm", "--read-sector", "0", d], stdout=PIPE) for d in args.disk_devs
     ]:
         p.wait()
 
@@ -95,13 +93,11 @@ if __name__ == "__main__":
     args.disk_devs = get_raid_members(args.raid)
 
     dprint(
-        "Monitoring %s. Timeout = %s" % (
-            ", ".join(args.disk_devs), hms(args.timeout)
-        )
+        "Monitoring %s. Timeout = %s" % (", ".join(args.disk_devs), hms(args.timeout))
     )
 
     while True:
-        stats = Path(f'/sys/block/{args.raid}/stat').read_text()
+        stats = Path(f"/sys/block/{args.raid}/stat").read_text()
 
         now = time.time()
 
@@ -121,7 +117,7 @@ if __name__ == "__main__":
 
                 dprint("Powering down after %s" % hms(now - last_standby))
                 power_down()
-                stats = Path(f'/sys/block/{args.raid}/stat').read_text()
+                stats = Path(f"/sys/block/{args.raid}/stat").read_text()
 
         old_stats = stats
         time.sleep(1)
