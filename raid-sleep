@@ -5,6 +5,7 @@ import argparse
 import time
 import textwrap
 from subprocess import Popen, PIPE
+from pathlib import Path
 
 
 def parse_args():
@@ -40,14 +41,20 @@ def parse_args():
     )
 
     parser.add_argument(
-        "disk", nargs="+",
-        help="Disks to monitor"
+        "raid",
+        help="Raid device to monitor"
     )
 
     args = parser.parse_args()
 
-    args.disk_devs = [os.path.realpath(d) for d in args.disk]
+    if args.raid.startswith("/dev/"):
+        args.raid = args.raid[5:]
 
+def get_raid_members(raid):
+    return [
+        "/dev/" + (d.resolve()/"..").resolve().stem
+        for d in Path(f"/sys/block/{raid}/slaves").iterdir()
+    ]
 
 def dprint(*message):
     if args.verbose:
@@ -112,6 +119,7 @@ if __name__ == "__main__":
     disk_state = 1
 
     parse_args()
+    args.disk_devs = get_raid_members(args.raid)
 
     dprint(
         "Monitoring %s. Timeout = %s" % (

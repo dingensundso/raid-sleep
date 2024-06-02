@@ -17,6 +17,5 @@ with normal `hdparm` power-down.
 ## Install
 
 1. Edit `raid-sleep.conf`:
-    * Use `find /dev/disk/by-id` and `blkid` to find out your disk IDs
 2. Read(!) and Execute `sudo ./install.sh`
     * This will set up a `systemd` service to start the program
