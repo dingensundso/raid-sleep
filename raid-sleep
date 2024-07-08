@@ -45,8 +45,12 @@ def parse_args():
 
     args = parser.parse_args()
 
-    if args.raid.startswith("/dev/"):
-        args.raid = args.raid[5:]
+    if not args.raid.startswith("/dev/"):
+        if args.raid[:2] == "md" and args.raid[2:].isnumeric():
+            args.raid = f"/dev/{args.raid}"
+        else:
+            args.raid = f"/dev/md/{args.raid}"
+    args.raid = Path(args.raid).resolve().stem
 
     return args
 
